@@ -1,0 +1,67 @@
+package main
+
+import(
+	"net"
+	"fmt"
+	"io/ioutil"
+	"encoding/json"
+)
+
+const PORT string = "24601"
+
+type ConfigRow struct{
+	Name string "json:name"
+	Ip string   "json:ip"
+	Port string   "json:port"
+}
+const(
+	filename string = "gofig.json"
+)
+func main(){
+	//firstRun()
+
+	//read configuration file
+	cfg, err := ioutil.ReadFile(filename)
+	handleError(err)
+
+	//parse to slice of config rows
+	config := []ConfigRow{}
+	err = json.Unmarshal(cfg, &config)
+	handleError(err)
+
+	//Update all clients
+	updateClients(config, cfg)
+}
+func updateClients(config []ConfigRow,file []byte){
+	fmt.Println("Starting client updates")
+	for _, row := range config{
+		fmt.Println(row)
+
+		conn, err := net.Dial("tcp", row.Ip +":"+PORT)
+
+		if err != nil{
+			fmt.Println(err)
+			return
+		}
+		defer conn.Close()
+		fmt.Println("Writing bytes")
+		_, err = conn.Write(file)
+		handleError(err)
+	}
+}
+
+func handleError(e error){
+	if e != nil {fmt.Println(e)}
+}
+
+/*func firstRun(){
+	sampleConfig := []ConfigRow{ConfigRow{"pcm", "localhost", "24601"}}
+	fmt.Printf("%v", sampleConfig)
+	fmt.Println(sampleConfig[0].Name)
+
+	data, err := json.Marshal(sampleConfig)
+	handleError(err)
+
+	err = ioutil.WriteFile(filename, data, 0644)
+	handleError(err)	
+}*/
